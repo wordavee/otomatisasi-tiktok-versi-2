@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#f4f5f6" />
+  <meta name="description" content="Generator Wordivee: 24 video Cloudinary + satu song tetap + quotes." />
+  <title>Wordivee — 24 Video Quote Generator</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/app-icon-180.png" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="cloudinary.css?v=31" />
+  <script src="assets/default-caption-font-inline.js?v=31" defer></script>
+  <script src="pwa.js?v=31" defer></script>
+  <script src="vendor/mediabunny.min.js" defer></script>
+  <script src="cloudinary.js?v=31" defer></script>
+</head>
+<body class="tipe5-page">
+  <a class="skip-link" href="#workspace">Lewati ke workspace</a>
+  <header class="topbar">
+    <div class="brand-wrap">
+      <div class="brand-mark" aria-hidden="true">Aa</div>
+      <div><p class="eyebrow">WORDIVEE CONTENT STUDIO</p><h1>Video Quote Generator</h1></div>
+    </div>
+    <div class="topbar-actions"><div class="privacy-badge"><span class="privacy-dot"></span>Cloudinary media</div></div>
+  </header>
+
+  <main id="workspace" class="workspace tipe5-workspace">
+    <section class="intro tipe5-intro">
+      <div>
+        <p class="kicker">24 VIDEO · 1 SONG · FULL 9:16</p>
+        <h2>Pilih video, tulis quotes, lalu export.</h2>
+        <p>Video dan song diambil otomatis dari Cloudinary. Tidak perlu upload media setiap kali membuat konten.</p>
+      </div>
+      <ol class="stepper"><li class="active"><span>1</span>Video</li><li><span>2</span>Audio</li><li><span>3</span>Tulisan</li><li><span>4</span>MP4</li></ol>
+    </section>
+
+    <div class="app-grid tipe5-grid">
+      <div class="controls">
+        <section class="panel" aria-labelledby="source-title">
+          <div class="panel-heading">
+            <div class="step-number">01</div>
+            <div><h3 id="source-title">Pilih video</h3><p>Pilih salah satu video Cloudinary.</p></div>
+            <span class="count-badge">24 VIDEO</span>
+          </div>
+          <div id="videoGrid" class="bundled-video-grid" aria-label="Daftar 24 video"></div>
+          <div id="videoStatus" class="source-status" role="status" aria-live="polite"><span class="status-dot"></span><span>Pilih Video 01–24.</span></div>
+          <p class="rights-note">Hanya video yang dipilih yang akan dimuat. Durasi video dipakai penuh.</p>
+          <video id="sourceVideo" class="source-video-helper" playsinline preload="auto"></video>
+        </section>
+
+        <section class="panel" aria-labelledby="audio-title">
+          <div class="panel-heading">
+            <div class="step-number">02</div>
+            <div><h3 id="audio-title">Atur audio</h3><p>Satu lagu yang sama dipakai otomatis untuk semua video.</p></div>
+            <span class="count-badge">SONG TETAP</span>
+          </div>
+          <label class="t5-label">LAGU OTOMATIS</label>
+          <div class="fixed-song-card">
+            <span class="fixed-song-icon" aria-hidden="true">♪</span>
+            <span class="fixed-song-copy"><strong>song.mp3</strong><small>Cloudinary · j9veqbrw</small></span>
+          </div>
+          <div id="musicStatus" class="source-status" role="status" aria-live="polite"><span class="status-dot"></span><span>Memuat song.mp3…</span></div>
+          <div class="audio-volume-grid">
+            <label class="slider-field"><span>Volume video asli <output id="sourceVolumeOutput">85%</output></span><input id="sourceVolume" type="range" min="0" max="100" value="85" /></label>
+            <label class="slider-field"><span>Volume lagu <output id="musicVolumeOutput">100%</output></span><input id="musicVolume" type="range" min="0" max="100" value="100" /></label>
+          </div>
+          <p class="drag-note">Jika lagu lebih pendek dari video, lagu akan diulang otomatis sampai video selesai.</p>
+          <audio id="backgroundMusic" preload="auto" loop></audio>
+        </section>
+
+        <section class="panel" aria-labelledby="caption-title">
+          <div class="panel-heading">
+            <div class="step-number">03</div>
+            <div><h3 id="caption-title">Atur tulisan</h3><p>Tulisan tetap datar dan tidak mengikuti perspektif 3D.</p></div>
+            <span class="count-badge">TEKS DATAR</span>
+          </div>
+          <label class="t5-label" for="captionText">TULISAN VIDEO</label>
+          <textarea id="captionText" class="caption-box" rows="5" maxlength="260">Setelah bertengkar, dia menghilang. Kamu lagi yang merasa bersalah.</textarea>
+          <div class="t5-asset-grid">
+            <div class="t5-asset-card">
+              <div class="t5-asset-copy"><span>FONT TULISAN</span><strong id="fontLabel">955f01d6-393f-449a-8962-a30b9ebc9cac</strong><small>TTF, OTF, WOFF, atau WOFF2</small></div>
+              <div class="t5-asset-actions"><label class="secondary-button t5-file-button" for="fontInput">Ganti font<input id="fontInput" type="file" accept=".ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2" /></label><button id="resetFont" class="text-button" type="button">Reset</button></div>
+            </div>
+            <div class="t5-asset-card">
+              <div class="t5-asset-copy"><span>FOTO LATAR LAPTOP</span><strong id="backgroundLabel">Foto bawaan</strong><small>JPG, PNG, atau WebP</small></div>
+              <div class="t5-asset-actions"><label class="secondary-button t5-file-button" for="backgroundInput">Ganti foto<input id="backgroundInput" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" /></label><button id="resetBackground" class="text-button" type="button">Foto awal</button></div>
+            </div>
+          </div>
+          <div class="t5-template-bar">
+            <div><strong>Template Tipe 5</strong><small id="templateStatus">Aktif otomatis · 955f01d6-393f-449a-8962-a30b9ebc9cac.ttf</small></div>
+            <div class="t5-template-actions"><button id="saveTemplate" class="primary-button" type="button">Simpan template</button><button id="deleteTemplate" class="text-button" type="button" hidden>Hapus</button></div>
+          </div>
+          <div class="t5-sliders">
+            <label class="slider-field"><span>Kiri–kanan <output id="captionXOutput">8%</output></span><input id="captionX" type="range" min="2" max="78" value="8" /></label>
+            <label class="slider-field"><span>Atas–bawah <output id="captionYOutput">30%</output></span><input id="captionY" type="range" min="5" max="82" value="30" /></label>
+            <label class="slider-field"><span>Ukuran <output id="captionSizeOutput">40 px</output></span><input id="captionSize" type="range" min="28" max="70" value="40" /></label>
+            <label class="slider-field"><span>Lebar teks <output id="captionWidthOutput">55%</output></span><input id="captionWidth" type="range" min="22" max="70" value="55" /></label>
+          </div>
+          <p class="drag-note">Seret tulisan pada preview untuk memindahkannya. Tulisan tetap datar.</p>
+        </section>
+
+        <section class="export-panel t5-export">
+          <div><p class="export-label">SIAP DIEKSPOR</p><h3>MP4 · 1080 × 1920 · 24 fps</h3><p id="exportSummary">Pilih Video 01–24 · durasi penuh</p></div>
+          <div class="export-actions"><button id="generate" class="primary-button" type="button" disabled>Proses & unduh →</button><button id="share" class="share-button" type="button" hidden>↗ Bagikan MP4</button></div>
+        </section>
+      </div>
+
+      <aside class="preview-column t5-preview-column">
+        <div class="preview-card t5-preview-card">
+          <div class="preview-header"><div><p class="preview-label">LIVE PREVIEW</p><h3>Full video + quotes</h3></div><span class="quality-chip">9:16</span></div>
+          <div id="previewStage" class="t5-stage"><canvas id="canvas" width="720" height="1280"></canvas><div id="stageMessage" class="stage-message"><strong>Siap membuat video</strong><small>Pilih Video 01–24.</small></div></div>
+          <div class="playbar"><button id="play" class="icon-button bordered" type="button" disabled>▶</button><div class="preview-time"><span id="currentTime">00:00</span><div><span id="progressBar"></span></div><span id="endTime">00:00</span></div></div>
+          <div class="preview-footer"><span>Output 1080 × 1920</span><span class="quality-chip">H.264</span><span>Full HD</span></div>
+        </div>
+        <div class="tip-card t5-tip"><span class="tip-mark">i</span><p><strong>Cloudinary hanya menyimpan media.</strong> Quotes dan proses export tetap dilakukan di browser.</p></div>
+      </aside>
+    </div>
+  </main>
+
+  <dialog id="progressDialog" class="progress-dialog"><div class="progress-content"><div class="progress-spinner"></div><p class="preview-label">MEMBUAT VIDEO</p><h2 id="progressTitle">Menyiapkan MP4…</h2><p id="progressDetail">Video penuh sedang diproses.</p><div class="progress-track"><span id="progressFill"></span></div><div class="progress-meta"><span id="progressPercent">0%</span><span id="progressCounter">0 / 0</span></div><button id="cancel" class="secondary-button" type="button">Batalkan</button></div></dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <footer><p>Wordivee · Cloudinary media + local browser export</p></footer>
+</body>
+</html>

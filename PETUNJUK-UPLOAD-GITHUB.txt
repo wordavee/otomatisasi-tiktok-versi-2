@@ -1,0 +1,22 @@
+UPLOAD KE GITHUB - VERSI CLOUDINARY
+===================================
+
+Upload SEMUA file/folder di paket ini ke repository GitHub Pages.
+
+JANGAN upload lagi:
+- video01.mp4 sampai video24.mp4
+- song.mp3
+
+Website sudah mengambil media dari Cloudinary:
+Cloud name: j9veqbrw
+Video public IDs: video01 ... video24
+Song public ID: song
+
+Setelah GitHub Pages aktif:
+1. Buka website.
+2. Pastikan status song menjadi hijau / siap.
+3. Klik Video 01 dan pastikan status video hijau / siap.
+4. Ketik quotes.
+5. Export.
+
+Jika satu tombol video gagal, cek Cloudinary dan pastikan public ID aset itu persis videoXX (contoh video07), bukan hanya Display name.
