@@ -1,6 +1,0 @@
-MASUKKAN SATU LAGU KE FOLDER INI.
-
-Nama file wajib: song.mp3
-
-Website akan memakai lagu ini otomatis untuk Video 01 sampai Video 24.
-Jika lagu lebih pendek dari video, lagu di-loop otomatis.
