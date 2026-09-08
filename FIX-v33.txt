@@ -1,0 +1,9 @@
+FIX v33
+=======
+- Akun GitHub, Cloudinary, dan TikTok boleh berbeda; website hanya memakai URL publik Cloudinary.
+- Preview video memakai URL Cloudinary langsung, bukan download Blob penuh lebih dulu.
+- Tombol Preview diaktifkan setelah metadata video siap.
+- Song dipanggil pada gesture klik Preview yang sama agar tidak diblokir autoplay browser.
+- video/audio memakai CORS anonymous untuk canvas preview.
+- URL song, video01 dan video02 memakai URL versioned yang sudah dikonfirmasi user. Video03-24 memakai URL Cloudinary versionless/latest.
+- Cache dinaikkan ke v33-fix agar GitHub Pages tidak memakai JavaScript lama.

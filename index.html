@@ -9,11 +9,11 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="icons/app-icon-180.png" />
   <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="cloudinary.css?v=31" />
-  <script src="assets/default-caption-font-inline.js?v=31" defer></script>
-  <script src="pwa.js?v=31" defer></script>
+  <link rel="stylesheet" href="cloudinary.css?v=33" />
+  <script src="assets/default-caption-font-inline.js?v=33" defer></script>
+  <script src="pwa.js?v=33" defer></script>
   <script src="vendor/mediabunny.min.js" defer></script>
-  <script src="cloudinary.js?v=31" defer></script>
+  <script src="cloudinary.js?v=33" defer></script>
 </head>
 <body class="tipe5-page">
   <a class="skip-link" href="#workspace">Lewati ke workspace</a>
@@ -46,7 +46,7 @@
           <div id="videoGrid" class="bundled-video-grid" aria-label="Daftar 24 video"></div>
           <div id="videoStatus" class="source-status" role="status" aria-live="polite"><span class="status-dot"></span><span>Pilih Video 01–24.</span></div>
           <p class="rights-note">Hanya video yang dipilih yang akan dimuat. Durasi video dipakai penuh.</p>
-          <video id="sourceVideo" class="source-video-helper" playsinline preload="auto"></video>
+          <video id="sourceVideo" class="source-video-helper" playsinline preload="metadata"></video>
         </section>
 
         <section class="panel" aria-labelledby="audio-title">
@@ -66,7 +66,7 @@
             <label class="slider-field"><span>Volume lagu <output id="musicVolumeOutput">100%</output></span><input id="musicVolume" type="range" min="0" max="100" value="100" /></label>
           </div>
           <p class="drag-note">Jika lagu lebih pendek dari video, lagu akan diulang otomatis sampai video selesai.</p>
-          <audio id="backgroundMusic" preload="auto" loop></audio>
+          <audio id="backgroundMusic" preload="metadata" loop></audio>
         </section>
 
         <section class="panel" aria-labelledby="caption-title">

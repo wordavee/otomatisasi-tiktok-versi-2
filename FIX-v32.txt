@@ -1,0 +1,8 @@
+FIX v32
+=======
+- Preview video tidak lagi mengunduh seluruh MP4 lewat fetch sebelum bisa diputar. Video HTML5 membuka URL Cloudinary langsung.
+- Tombol Preview sekarang diaktifkan setelah metadata video siap. Pada v31 tombol ini tetap disabled (bug).
+- Song diputar pada gesture klik Preview yang sama agar tidak diblokir autoplay browser.
+- Export membaca video/song dengan Mediabunny UrlSource (range/network source), bukan harus membuat Blob penuh terlebih dahulu.
+- song, video01 dan video02 memakai URL Cloudinary versioned yang sudah dikonfirmasi. Video03-24 memakai URL versionless, yang didukung Cloudinary untuk versi terbaru.
+- Cache service worker dinaikkan ke v32-fix.
