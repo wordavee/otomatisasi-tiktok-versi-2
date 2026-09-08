@@ -1,0 +1,24 @@
+WORDIVEE v35 — AUTO UPLOAD CLOUDINARY
+
+Cloud name: j9veqbrw
+Unsigned upload preset: wordavee_exports
+Asset folder preset: wordavee/exports
+
+ALUR:
+1. Pilih Video 01-24.
+2. Setiap video sudah dipetakan ke satu jam:
+   Video 01 = 01:00 ... Video 23 = 23:00, Video 24 = 00:00.
+3. Tulis quote.
+4. Klik Export + upload.
+5. Renderer MP4 tetap sama seperti versi yang sudah berhasil.
+6. MP4 tetap diunduh ke perangkat.
+7. Setelah itu MP4 otomatis di-upload ke Cloudinary melalui preset unsigned wordavee_exports.
+8. URL secure_url hasil upload tampil di website dan bisa disalin.
+
+KEAMANAN:
+- Tidak ada Cloudinary API Secret di website.
+- Tidak ada Buffer API Key di website.
+- Nama upload preset dan Cloud name memang boleh berada di frontend.
+
+CATATAN:
+Versi ini belum mengirim langsung ke Buffer. Tahap Buffer dijalankan dari GitHub Actions/secret setelah auto-upload ini lulus tes.

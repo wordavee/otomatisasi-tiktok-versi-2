@@ -1,0 +1,7 @@
+FIX v34
+- Video Cloudinary dicoba sebagai MP4/H.264 + AAC terlebih dahulu.
+- Ada fallback ke URL asli bila transformasi gagal.
+- Song mencoba beberapa URL Cloudinary.
+- Preview meng-unmute video dan song secara eksplisit.
+- Service worker/cache lama dihapus agar GitHub Pages tidak memakai JS lama.
+- URL Video 01/02 dan song memakai versi yang sudah dikonfirmasi pengguna.

@@ -9,11 +9,11 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="icons/app-icon-180.png" />
   <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="cloudinary.css?v=33" />
-  <script src="assets/default-caption-font-inline.js?v=33" defer></script>
-  <script src="pwa.js?v=33" defer></script>
+  <link rel="stylesheet" href="cloudinary.css?v=35" />
+  <script src="assets/default-caption-font-inline.js?v=35" defer></script>
+  <script src="pwa.js?v=35" defer></script>
   <script src="vendor/mediabunny.min.js" defer></script>
-  <script src="cloudinary.js?v=33" defer></script>
+  <script src="cloudinary.js?v=35" defer></script>
 </head>
 <body class="tipe5-page">
   <a class="skip-link" href="#workspace">Lewati ke workspace</a>
@@ -28,9 +28,9 @@
   <main id="workspace" class="workspace tipe5-workspace">
     <section class="intro tipe5-intro">
       <div>
-        <p class="kicker">24 VIDEO · 1 SONG · FULL 9:16</p>
+        <p class="kicker">24 VIDEO · 24 JAM · 1 SONG · FULL 9:16</p>
         <h2>Pilih video, tulis quotes, lalu export.</h2>
-        <p>Video dan song diambil otomatis dari Cloudinary. Tidak perlu upload media setiap kali membuat konten.</p>
+        <p>Setiap jam memakai satu video berbeda: Video 01 = 01:00 sampai Video 24 = 00:00. Hasil export otomatis di-upload ke Cloudinary.</p>
       </div>
       <ol class="stepper"><li class="active"><span>1</span>Video</li><li><span>2</span>Audio</li><li><span>3</span>Tulisan</li><li><span>4</span>MP4</li></ol>
     </section>
@@ -40,12 +40,12 @@
         <section class="panel" aria-labelledby="source-title">
           <div class="panel-heading">
             <div class="step-number">01</div>
-            <div><h3 id="source-title">Pilih video</h3><p>Pilih salah satu video Cloudinary.</p></div>
+            <div><h3 id="source-title">Pilih video sesuai jam</h3><p>Video 01 = 01:00 · … · Video 24 = 00:00.</p></div>
             <span class="count-badge">24 VIDEO</span>
           </div>
           <div id="videoGrid" class="bundled-video-grid" aria-label="Daftar 24 video"></div>
           <div id="videoStatus" class="source-status" role="status" aria-live="polite"><span class="status-dot"></span><span>Pilih Video 01–24.</span></div>
-          <p class="rights-note">Hanya video yang dipilih yang akan dimuat. Durasi video dipakai penuh.</p>
+          <p class="rights-note">1 jam = 1 video tetap. Hanya video yang dipilih yang dimuat dan durasinya dipakai penuh.</p>
           <video id="sourceVideo" class="source-video-helper" playsinline preload="metadata"></video>
         </section>
 
@@ -102,7 +102,19 @@
 
         <section class="export-panel t5-export">
           <div><p class="export-label">SIAP DIEKSPOR</p><h3>MP4 · 1080 × 1920 · 24 fps</h3><p id="exportSummary">Pilih Video 01–24 · durasi penuh</p></div>
-          <div class="export-actions"><button id="generate" class="primary-button" type="button" disabled>Proses & unduh →</button><button id="share" class="share-button" type="button" hidden>↗ Bagikan MP4</button></div>
+          <div class="export-actions"><button id="generate" class="primary-button" type="button" disabled>Export + upload →</button><button id="share" class="share-button" type="button" hidden>↗ Bagikan MP4</button></div>
+        </section>
+
+        <section id="cloudUploadCard" class="cloud-upload-card" aria-live="polite">
+          <div class="cloud-upload-head">
+            <div><p class="export-label">CLOUDINARY AUTO-UPLOAD</p><strong>wordavee/exports</strong></div>
+            <span id="cloudUploadBadge" class="cloud-upload-badge">SIAP</span>
+          </div>
+          <p id="cloudUploadMessage">Setelah MP4 selesai, hasil export otomatis di-upload menggunakan preset <strong>wordavee_exports</strong>.</p>
+          <div id="cloudUploadResult" class="cloud-upload-result" hidden>
+            <input id="cloudUploadUrl" type="text" readonly aria-label="URL hasil upload Cloudinary" />
+            <button id="copyCloudUrl" class="secondary-button" type="button">Salin URL</button>
+          </div>
         </section>
       </div>
 
@@ -113,7 +125,7 @@
           <div class="playbar"><button id="play" class="icon-button bordered" type="button" disabled>▶</button><div class="preview-time"><span id="currentTime">00:00</span><div><span id="progressBar"></span></div><span id="endTime">00:00</span></div></div>
           <div class="preview-footer"><span>Output 1080 × 1920</span><span class="quality-chip">H.264</span><span>Full HD</span></div>
         </div>
-        <div class="tip-card t5-tip"><span class="tip-mark">i</span><p><strong>Cloudinary hanya menyimpan media.</strong> Quotes dan proses export tetap dilakukan di browser.</p></div>
+        <div class="tip-card t5-tip"><span class="tip-mark">i</span><p><strong>Cloudinary media dinormalisasi ke MP4/H.264 untuk kompatibilitas browser.</strong> Quotes dan proses export tetap dilakukan di browser.</p></div>
       </aside>
     </div>
   </main>
