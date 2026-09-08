@@ -1,0 +1,160 @@
+name: Test Video01 to Buffer Draft
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-video01:
+    runs-on: ubuntu-latest
+    env:
+      BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+      BUFFER_CHANNEL_ID: ${{ secrets.BUFFER_CHANNEL_ID }}
+      CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+      CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+      CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+
+    steps:
+      - name: Find latest Video01 export and create Buffer draft
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os
+          import json
+          import base64
+          import urllib.parse
+          import urllib.request
+          import urllib.error
+
+          cloud_name = os.environ["CLOUDINARY_CLOUD_NAME"]
+          cloud_key = os.environ["CLOUDINARY_API_KEY"]
+          cloud_secret = os.environ["CLOUDINARY_API_SECRET"]
+          buffer_key = os.environ["BUFFER_API_KEY"]
+          channel_id = os.environ["BUFFER_CHANNEL_ID"]
+
+          # 1) Read assets directly from the Cloudinary asset folder.
+          folder = "wordavee/exports"
+          query = urllib.parse.urlencode({
+              "asset_folder": folder,
+              "max_results": 500,
+          })
+          cloud_url = f"https://api.cloudinary.com/v1_1/{cloud_name}/resources/by_asset_folder?{query}"
+
+          credentials = base64.b64encode(f"{cloud_key}:{cloud_secret}".encode()).decode()
+          cloud_req = urllib.request.Request(
+              cloud_url,
+              headers={"Authorization": f"Basic {credentials}"},
+          )
+
+          try:
+              with urllib.request.urlopen(cloud_req, timeout=30) as response:
+                  cloud_data = json.load(response)
+          except urllib.error.HTTPError as exc:
+              body = exc.read().decode("utf-8", "replace")
+              raise SystemExit(f"Cloudinary API gagal ({exc.code}): {body[:500]}")
+
+          resources = cloud_data.get("resources", [])
+
+          # The preset keeps the uploaded filename as display_name.
+          # If several Video01 exports exist, choose the newest one.
+          matches = []
+          for asset in resources:
+              display_name = (asset.get("display_name") or "").lower()
+              if display_name.startswith("wordivee-video01-"):
+                  matches.append(asset)
+
+          if not matches:
+              # Fallback in case display_name is absent in a response.
+              for asset in resources:
+                  filename = (asset.get("filename") or asset.get("original_filename") or "").lower()
+                  if filename.startswith("wordivee-video01-"):
+                      matches.append(asset)
+
+          if not matches:
+              raise SystemExit(
+                  "Tidak menemukan export Video01 di Cloudinary asset folder wordivee/exports."
+              )
+
+          matches.sort(key=lambda a: a.get("created_at", ""), reverse=True)
+          chosen = matches[0]
+          video_url = chosen.get("secure_url")
+          if not video_url:
+              raise SystemExit("Asset Video01 ditemukan, tetapi secure_url kosong.")
+
+          print("Cloudinary OK")
+          print("Dipilih:", chosen.get("display_name") or chosen.get("public_id") or "Video01")
+          print("Created at:", chosen.get("created_at", "-"))
+          print("URL:", video_url)
+
+          # 2) Create a SAFE Buffer draft only (not scheduled, not published).
+          graphql = f'''
+          mutation CreatePost {{
+            createPost(
+              input: {{
+                text: ""
+                channelId: "{channel_id}"
+                schedulingType: automatic
+                mode: addToQueue
+                saveToDraft: true
+                assets: [
+                  {{
+                    video: {{
+                      url: "{video_url}"
+                      metadata: {{ thumbnailOffset: 1000 }}
+                    }}
+                  }}
+                ]
+              }}
+            ) {{
+              ... on PostActionSuccess {{
+                post {{
+                  id
+                  text
+                  dueAt
+                  status
+                  assets {{ source }}
+                }}
+              }}
+              ... on MutationError {{
+                message
+              }}
+            }}
+          }}
+          '''
+
+          payload = json.dumps({"query": graphql}).encode()
+          buffer_req = urllib.request.Request(
+              "https://api.buffer.com",
+              data=payload,
+              method="POST",
+              headers={
+                  "Authorization": f"Bearer {buffer_key}",
+                  "Content-Type": "application/json",
+              },
+          )
+
+          try:
+              with urllib.request.urlopen(buffer_req, timeout=30) as response:
+                  buffer_data = json.load(response)
+          except urllib.error.HTTPError as exc:
+              body = exc.read().decode("utf-8", "replace")
+              raise SystemExit(f"Buffer API gagal ({exc.code}): {body[:1000]}")
+
+          if buffer_data.get("errors"):
+              raise SystemExit("Buffer GraphQL error: " + json.dumps(buffer_data["errors"], ensure_ascii=False))
+
+          result = (buffer_data.get("data") or {}).get("createPost") or {}
+          if result.get("message"):
+              raise SystemExit("Buffer menolak draft: " + result["message"])
+
+          post = result.get("post")
+          if not post:
+              raise SystemExit("Respons Buffer tidak berisi post: " + json.dumps(buffer_data, ensure_ascii=False))
+
+          print("Buffer OK")
+          print("Draft Post ID:", post.get("id"))
+          print("Status:", post.get("status"))
+          print("TEST BERHASIL: Video01 terbaru dari Cloudinary dibuat sebagai draft Buffer.")
+          PY
