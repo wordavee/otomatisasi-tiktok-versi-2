@@ -1,0 +1,435 @@
+name: Wordivee 24H Buffer Scheduler
+
+on:
+  workflow_dispatch:
+    inputs:
+      session:
+        description: "Sesi yang diuji/jalankan"
+        required: true
+        default: "auto"
+        type: choice
+        options:
+          - auto
+          - "1"
+          - "2"
+          - "3"
+      target_date:
+        description: "Tanggal posting WIB, YYYY-MM-DD. Kosong = hari ini"
+        required: false
+        default: ""
+        type: string
+      dry_run:
+        description: "Tes saja: jangan membuat post Buffer dan jangan cleanup"
+        required: true
+        default: true
+        type: boolean
+  schedule:
+    - cron: "30 0 * * *"
+      timezone: "Asia/Jakarta"
+    - cron: "30 10 * * *"
+      timezone: "Asia/Jakarta"
+    - cron: "30 20 * * *"
+      timezone: "Asia/Jakarta"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wordivee-buffer-publisher
+  cancel-in-progress: false
+
+jobs:
+  schedule-wordivee:
+    if: ${{ github.event_name == 'workflow_dispatch' || vars.WORDIVEE_AUTOMATION_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    env:
+      BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+      BUFFER_CHANNEL_ID: ${{ secrets.BUFFER_CHANNEL_ID }}
+      CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+      CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+      CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+      EVENT_NAME: ${{ github.event_name }}
+      SCHEDULE_EXPR: ${{ github.event.schedule }}
+      INPUT_SESSION: ${{ inputs.session }}
+      INPUT_TARGET_DATE: ${{ inputs.target_date }}
+      INPUT_DRY_RUN: ${{ inputs.dry_run }}
+      EXPORT_ASSET_FOLDER: wordavee/exports
+      MAX_EXPORT_AGE_HOURS: "30"
+      EXPORT_RETENTION_DAYS: "3"
+
+    steps:
+      - name: Preflight, schedule Buffer, and cleanup Cloudinary
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os
+          import re
+          import json
+          import base64
+          import urllib.parse
+          import urllib.request
+          import urllib.error
+          from datetime import datetime, timedelta, timezone, date
+          from zoneinfo import ZoneInfo
+
+          WIB = ZoneInfo("Asia/Jakarta")
+          UTC = timezone.utc
+
+          cloud_name = os.environ["CLOUDINARY_CLOUD_NAME"]
+          cloud_key = os.environ["CLOUDINARY_API_KEY"]
+          cloud_secret = os.environ["CLOUDINARY_API_SECRET"]
+          buffer_key = os.environ["BUFFER_API_KEY"]
+          channel_id = os.environ["BUFFER_CHANNEL_ID"]
+          asset_folder = os.environ.get("EXPORT_ASSET_FOLDER", "wordavee/exports")
+          max_age_hours = float(os.environ.get("MAX_EXPORT_AGE_HOURS", "30"))
+          retention_days = float(os.environ.get("EXPORT_RETENTION_DAYS", "3"))
+
+          event_name = os.environ.get("EVENT_NAME", "")
+          schedule_expr = os.environ.get("SCHEDULE_EXPR", "")
+          input_session = (os.environ.get("INPUT_SESSION") or "auto").strip()
+          target_date_raw = (os.environ.get("INPUT_TARGET_DATE") or "").strip()
+          input_dry = (os.environ.get("INPUT_DRY_RUN") or "").strip().lower()
+          dry_run = event_name == "workflow_dispatch" and input_dry in {"true", "1", "yes", "on"}
+
+          now_utc = datetime.now(UTC)
+          now_wib = now_utc.astimezone(WIB)
+
+          def fail(message):
+              raise SystemExit("ERROR: " + message)
+
+          def parse_iso(value):
+              if not value:
+                  return None
+              value = value.replace("Z", "+00:00")
+              dt = datetime.fromisoformat(value)
+              if dt.tzinfo is None:
+                  dt = dt.replace(tzinfo=UTC)
+              return dt.astimezone(UTC)
+
+          def basic_auth():
+              token = base64.b64encode(f"{cloud_key}:{cloud_secret}".encode()).decode()
+              return {"Authorization": f"Basic {token}"}
+
+          def http_json(url, *, method="GET", headers=None, data=None, timeout=45):
+              req = urllib.request.Request(url, method=method, headers=headers or {}, data=data)
+              try:
+                  with urllib.request.urlopen(req, timeout=timeout) as response:
+                      raw = response.read()
+                      return json.loads(raw.decode("utf-8")) if raw else {}
+              except urllib.error.HTTPError as exc:
+                  body = exc.read().decode("utf-8", "replace")
+                  fail(f"HTTP {exc.code} untuk {url}: {body[:1200]}")
+              except urllib.error.URLError as exc:
+                  fail(f"Tidak dapat mengakses {url}: {exc}")
+
+          def buffer_graphql(query):
+              payload = json.dumps({"query": query}).encode("utf-8")
+              data = http_json(
+                  "https://api.buffer.com",
+                  method="POST",
+                  headers={
+                      "Authorization": f"Bearer {buffer_key}",
+                      "Content-Type": "application/json",
+                  },
+                  data=payload,
+              )
+              if data.get("errors"):
+                  fail("Buffer GraphQL: " + json.dumps(data["errors"], ensure_ascii=False))
+              return data.get("data") or {}
+
+          # Resolve session.
+          schedule_map = {
+              "30 0 * * *": "1",
+              "30 10 * * *": "2",
+              "30 20 * * *": "3",
+          }
+          if event_name == "schedule":
+              session = schedule_map.get(schedule_expr)
+              if not session:
+                  # Defensive fallback if GitHub changes event.schedule formatting.
+                  if now_wib.hour < 6:
+                      session = "1"
+                  elif now_wib.hour < 16:
+                      session = "2"
+                  else:
+                      session = "3"
+          else:
+              session = input_session
+              if session == "auto":
+                  if now_wib.hour < 6:
+                      session = "1"
+                  elif now_wib.hour < 16:
+                      session = "2"
+                  else:
+                      session = "3"
+
+          if session not in {"1", "2", "3"}:
+              fail(f"Session tidak valid: {session}")
+
+          slot_map = {
+              "1": list(range(1, 11)),
+              "2": list(range(11, 21)),
+              "3": list(range(21, 25)),
+          }
+          slots = slot_map[session]
+
+          if target_date_raw:
+              try:
+                  target_day = date.fromisoformat(target_date_raw)
+              except ValueError:
+                  fail("target_date harus YYYY-MM-DD")
+          else:
+              target_day = now_wib.date()
+
+          def slot_due_wib(slot):
+              if slot == 24:
+                  next_day = target_day + timedelta(days=1)
+                  return datetime(next_day.year, next_day.month, next_day.day, 0, 0, tzinfo=WIB)
+              return datetime(target_day.year, target_day.month, target_day.day, slot, 0, tzinfo=WIB)
+
+          due_by_slot = {slot: slot_due_wib(slot) for slot in slots}
+          past = [slot for slot, due in due_by_slot.items() if due.astimezone(UTC) <= now_utc + timedelta(minutes=3)]
+          if past and not dry_run:
+              fail(f"Waktu slot sudah lewat/terlalu dekat: {past}. target_date={target_day}")
+
+          print(f"WIB sekarang       : {now_wib.isoformat()}")
+          print(f"Session            : {session}")
+          print(f"Target tanggal WIB : {target_day}")
+          print(f"Dry run            : {dry_run}")
+          print(f"Slots              : {slots}")
+
+          # Fetch all assets directly in the exports asset folder (pagination supported).
+          resources = []
+          cursor = None
+          while True:
+              params = {"asset_folder": asset_folder, "max_results": 500}
+              if cursor:
+                  params["next_cursor"] = cursor
+              url = (
+                  f"https://api.cloudinary.com/v1_1/{cloud_name}/resources/by_asset_folder?"
+                  + urllib.parse.urlencode(params)
+              )
+              page = http_json(url, headers=basic_auth())
+              resources.extend(page.get("resources") or [])
+              cursor = page.get("next_cursor")
+              if not cursor:
+                  break
+
+          print(f"Cloudinary assets  : {len(resources)} di {asset_folder}")
+
+          # Cleanup only the exports folder and only when this is a real run.
+          if not dry_run:
+              cutoff = now_utc - timedelta(days=retention_days)
+              old_video_public_ids = []
+              for asset in resources:
+                  created = parse_iso(asset.get("created_at"))
+                  if not created or created >= cutoff:
+                      continue
+                  if asset.get("resource_type") == "video" and asset.get("type", "upload") == "upload":
+                      public_id = asset.get("public_id")
+                      if public_id:
+                          old_video_public_ids.append(public_id)
+
+              if old_video_public_ids:
+                  delete_url = f"https://api.cloudinary.com/v1_1/{cloud_name}/resources/video/upload"
+                  for i in range(0, len(old_video_public_ids), 100):
+                      chunk = old_video_public_ids[i:i+100]
+                      form = urllib.parse.urlencode([("public_ids[]", pid) for pid in chunk]).encode("utf-8")
+                      result = http_json(
+                          delete_url,
+                          method="DELETE",
+                          headers={**basic_auth(), "Content-Type": "application/x-www-form-urlencoded"},
+                          data=form,
+                      )
+                      print(f"Cleanup Cloudinary : meminta hapus {len(chunk)} export lama")
+              else:
+                  print("Cleanup Cloudinary : tidak ada export > 3 hari")
+
+          # Pick newest export per requested video slot.
+          pattern = re.compile(r"^wordivee-video(\d{2})-")
+          candidates = {slot: [] for slot in slots}
+          for asset in resources:
+              name = (
+                  asset.get("display_name")
+                  or asset.get("filename")
+                  or asset.get("original_filename")
+                  or ""
+              ).lower()
+              m = pattern.match(name)
+              if not m:
+                  continue
+              slot = int(m.group(1))
+              if slot in candidates:
+                  candidates[slot].append(asset)
+
+          chosen = {}
+          preflight_errors = []
+          for slot in slots:
+              items = candidates[slot]
+              items.sort(key=lambda a: a.get("created_at", ""), reverse=True)
+              if not items:
+                  preflight_errors.append(f"Video{slot:02d}: export tidak ditemukan")
+                  continue
+              asset = items[0]
+              created = parse_iso(asset.get("created_at"))
+              secure_url = asset.get("secure_url")
+              if not created:
+                  preflight_errors.append(f"Video{slot:02d}: created_at kosong")
+                  continue
+              age_hours = (now_utc - created).total_seconds() / 3600
+              if age_hours > max_age_hours:
+                  preflight_errors.append(
+                      f"Video{slot:02d}: export terbaru sudah {age_hours:.1f} jam (maks {max_age_hours:g} jam)"
+                  )
+                  continue
+              if not secure_url:
+                  preflight_errors.append(f"Video{slot:02d}: secure_url kosong")
+                  continue
+              chosen[slot] = asset
+              label = asset.get("display_name") or asset.get("public_id")
+              print(f"Video{slot:02d}          : {label} | umur {age_hours:.1f} jam")
+
+          if preflight_errors:
+              print("\nPRECHECK GAGAL — tidak ada post Buffer yang dibuat:")
+              for err in preflight_errors:
+                  print(" -", err)
+              fail("Lengkapi export terbaru untuk semua slot sesi ini.")
+
+          # Locate the Buffer organization that owns this channel.
+          account_data = buffer_graphql('''
+          query GetOrganizations {
+            account { organizations { id name } }
+          }
+          ''')
+          organizations = ((account_data.get("account") or {}).get("organizations") or [])
+          if not organizations:
+              fail("Buffer tidak mengembalikan organization.")
+
+          org_id = None
+          org_name = None
+          for org in organizations:
+              oid = org.get("id")
+              query = f'''
+              query GetChannels {{
+                channels(input: {{ organizationId: "{oid}" }}) {{
+                  id name displayName service
+                }}
+              }}
+              '''
+              channels = buffer_graphql(query).get("channels") or []
+              if any(ch.get("id") == channel_id for ch in channels):
+                  org_id = oid
+                  org_name = org.get("name")
+                  break
+          if not org_id:
+              fail("BUFFER_CHANNEL_ID tidak ditemukan di organization Buffer mana pun.")
+          print(f"Buffer organization: {org_name} ({org_id})")
+
+          # Free Buffer allows 10 scheduled posts per channel. Require an empty scheduled queue
+          # at each fill session so a delayed/old post never causes partial overflow.
+          scheduled_query = f'''
+          query GetScheduledPosts {{
+            posts(
+              first: 100
+              input: {{
+                organizationId: "{org_id}"
+                filter: {{ status: [scheduled], channelIds: ["{channel_id}"] }}
+                sort: [{{ field: dueAt, direction: asc }}]
+              }}
+            ) {{
+              edges {{ node {{ id dueAt channelId status }} }}
+            }}
+          }}
+          '''
+          scheduled_edges = ((buffer_graphql(scheduled_query).get("posts") or {}).get("edges") or [])
+          scheduled_posts = [e.get("node") or {} for e in scheduled_edges]
+          if scheduled_posts and not dry_run:
+              print("Scheduled post yang masih ada:")
+              for post in scheduled_posts:
+                  print(" -", post.get("id"), post.get("dueAt"))
+              fail(
+                  "Queue Buffer belum kosong. Tidak mengisi sesi baru untuk mencegah melebihi batas 10 atau duplikasi."
+              )
+          print(f"Buffer scheduled   : {len(scheduled_posts)}")
+
+          # Summary of what would be scheduled.
+          plan = []
+          for slot in slots:
+              asset = chosen[slot]
+              due_wib = due_by_slot[slot]
+              due_utc = due_wib.astimezone(UTC)
+              plan.append((slot, asset, due_wib, due_utc))
+              print(
+                  f"PLAN Video{slot:02d} -> {due_wib.strftime('%Y-%m-%d %H:%M WIB')} "
+                  f"({due_utc.isoformat().replace('+00:00','Z')})"
+              )
+
+          if dry_run:
+              print("\nDRY RUN BERHASIL — tidak ada post Buffer dibuat dan tidak ada Cloudinary yang dihapus.")
+              raise SystemExit(0)
+
+          # Create scheduled TikTok posts. Caption intentionally empty; the quote/song are in MP4.
+          created_posts = []
+          for slot, asset, due_wib, due_utc in plan:
+              video_url = asset["secure_url"]
+              due_iso = due_utc.isoformat(timespec="milliseconds").replace("+00:00", "Z")
+              # URLs from Cloudinary contain no quotes; json escaping here protects future changes.
+              video_url_gql = json.dumps(video_url)
+              channel_id_gql = json.dumps(channel_id)
+              due_gql = json.dumps(due_iso)
+              mutation = f'''
+              mutation CreatePost {{
+                createPost(
+                  input: {{
+                    text: ""
+                    channelId: {channel_id_gql}
+                    schedulingType: automatic
+                    mode: customScheduled
+                    dueAt: {due_gql}
+                    assets: [
+                      {{
+                        video: {{
+                          url: {video_url_gql}
+                          metadata: {{ thumbnailOffset: 1000 }}
+                        }}
+                      }}
+                    ]
+                  }}
+                ) {{
+                  ... on PostActionSuccess {{
+                    post {{ id dueAt status }}
+                  }}
+                  ... on MutationError {{ message }}
+                }}
+              }}
+              '''
+              result = buffer_graphql(mutation).get("createPost") or {}
+              if result.get("message"):
+                  fail(
+                      f"Buffer menolak Video{slot:02d}: {result['message']}. "
+                      f"Post sebelumnya pada sesi ini yang sudah dibuat: {created_posts}"
+                  )
+              post = result.get("post")
+              if not post:
+                  fail(
+                      f"Respons Buffer Video{slot:02d} tidak berisi post. "
+                      f"Post sebelumnya: {created_posts}"
+                  )
+              created_posts.append(post.get("id"))
+              print(
+                  f"BUFFER OK Video{slot:02d}: post={post.get('id')} dueAt={post.get('dueAt')} status={post.get('status')}"
+              )
+
+          print(f"\nSESI {session} BERHASIL: {len(created_posts)} post dijadwalkan ke TikTok wordavee.")
+
+          # Add a compact Actions job summary.
+          summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary_path:
+              with open(summary_path, "a", encoding="utf-8") as f:
+                  f.write(f"## Wordivee session {session} berhasil\n\n")
+                  f.write(f"Target tanggal WIB: **{target_day}**  \n")
+                  f.write(f"Jumlah post: **{len(created_posts)}**  \n\n")
+                  f.write("| Video | Jadwal WIB | Buffer post ID |\n|---|---|---|\n")
+                  for (slot, _, due_wib, _), post_id in zip(plan, created_posts):
+                      f.write(f"| Video{slot:02d} | {due_wib.strftime('%Y-%m-%d %H:%M')} | `{post_id}` |\n")
+          PY
