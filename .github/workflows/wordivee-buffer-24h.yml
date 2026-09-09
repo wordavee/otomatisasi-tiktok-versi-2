@@ -1,4 +1,4 @@
-name: Wordivee 24H Buffer Scheduler
+name: Wordivee 24H Buffer Scheduler (Legacy Manual Only)
 
 on:
   workflow_dispatch:
@@ -23,13 +23,6 @@ on:
         required: true
         default: true
         type: boolean
-  schedule:
-    - cron: "30 0 * * *"
-      timezone: "Asia/Jakarta"
-    - cron: "30 10 * * *"
-      timezone: "Asia/Jakarta"
-    - cron: "30 20 * * *"
-      timezone: "Asia/Jakarta"
 
 permissions:
   contents: read
@@ -40,7 +33,7 @@ concurrency:
 
 jobs:
   schedule-wordivee:
-    if: ${{ github.event_name == 'workflow_dispatch' || vars.WORDIVEE_AUTOMATION_ENABLED == 'true' }}
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     env:
       BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}

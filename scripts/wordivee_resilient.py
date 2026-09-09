@@ -445,12 +445,23 @@ def reserved_quotes(state_dir: Path, exclude_path: Path) -> list[dict[str, Any]]
         if path == exclude_path or path.name.startswith("_"):
             continue
         payload = load_json(path, {})
-        for key, entry in (payload.get("slots") or {}).items():
-            if entry.get("status") not in {"planned", "failed_retryable"}:
-                continue
-            quote = entry.get("quote") or {}
-            if quote.get("hash"):
-                reserved.append({**quote, "date": payload.get("target_date"), "slot": key, "reserved": True})
+        reserved.extend(reserved_from_state_payload(payload))
+    return reserved
+
+
+def reserved_from_state_payload(
+    payload: dict[str, Any], exclude_slots: set[str] | None = None
+) -> list[dict[str, Any]]:
+    reserved: list[dict[str, Any]] = []
+    excluded = exclude_slots or set()
+    for key, entry in (payload.get("slots") or {}).items():
+        if key in excluded or entry.get("status") not in {"planned", "failed_retryable"}:
+            continue
+        quote = entry.get("quote") or {}
+        if quote.get("hash"):
+            reserved.append(
+                {**quote, "date": payload.get("target_date"), "slot": key, "reserved": True}
+            )
     return reserved
 
 
@@ -467,7 +478,10 @@ def validate_quote(
     text = decode_context(custom.get("quote"))
     normalized = decode_context(custom.get("quote_normalized")) or normalize_quote(text)
     supplied_hash = str(custom.get("quote_hash") or "").strip().lower()
-    digest = supplied_hash or (quote_hash(normalized) if normalized else "")
+    calculated_hash = quote_hash(normalized) if normalized else ""
+    if supplied_hash and supplied_hash != calculated_hash:
+        return None, "quote_hash metadata tidak cocok dengan quote_normalized"
+    digest = supplied_hash or calculated_hash
     context_date = str(custom.get("posting_date") or "")
     context_slot = str(custom.get("video_slot") or "").zfill(2)
     if not text or not normalized or not digest:
@@ -554,13 +568,17 @@ def plan(args: argparse.Namespace) -> int:
     scheduled = buffer.scheduled_posts()
     chosen, asset_errors = choose_assets(resources, target_day, slots, max_age, now)
     details = cloudinary.fetch_details(chosen.values()) if guard_active and chosen else {}
-    history = load_history(history_path)
-    comparisons = list(history.get("quotes") or []) + reserved_quotes(state_dir, state_path)
     state = load_json(
         state_path,
         {"version": 1, "target_date": target_day.isoformat(), "timezone": "Asia/Jakarta", "slots": {}},
     )
     state.setdefault("slots", {})
+    history = load_history(history_path)
+    comparisons = (
+        list(history.get("quotes") or [])
+        + reserved_quotes(state_dir, state_path)
+        + reserved_from_state_payload(state, {f"{slot:02d}" for slot in slots})
+    )
     batch: list[dict[str, Any]] = []
 
     print(f"WIB sekarang       : {now.astimezone(WIB).isoformat()}")

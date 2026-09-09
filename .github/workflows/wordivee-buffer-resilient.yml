@@ -115,7 +115,7 @@ jobs:
         if: ${{ steps.mode.outputs.live == 'true' }}
         shell: bash
         run: |
-          if git diff --quiet -- state; then
+          if [[ -z "$(git status --porcelain -- state)" ]]; then
             echo "Tidak ada state plan baru."
             exit 0
           fi
@@ -136,7 +136,7 @@ jobs:
         if: ${{ always() && steps.mode.outputs.live == 'true' }}
         shell: bash
         run: |
-          if git diff --quiet -- state quotes-history.json; then
+          if [[ -z "$(git status --porcelain -- state quotes-history.json)" ]]; then
             echo "Tidak ada perubahan final state/history."
             exit 0
           fi
