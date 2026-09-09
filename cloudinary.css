@@ -67,3 +67,19 @@
   .cloud-upload-result { grid-template-columns: 1fr; }
   .cloud-upload-result .secondary-button { width: 100%; }
 }
+
+
+/* v37 — tanggal posting eksplisit untuk sinkronisasi scheduler */
+.posting-date-card{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  margin-top:14px;padding:13px 14px;background:#f7f8fa;border:1px solid var(--border);border-radius:11px
+}
+.posting-date-copy{display:grid;gap:2px;min-width:0}
+.posting-date-copy>span{color:var(--accent);font-size:9px;font-weight:900;letter-spacing:.08em}
+.posting-date-copy strong{font-size:13px;color:var(--ink)}
+.posting-date-copy small{color:var(--muted);font-size:9px;line-height:1.4}
+.posting-date-controls{display:grid;gap:6px;min-width:190px}
+#postingDate{min-height:40px;width:100%;padding:0 10px;color:var(--ink);background:#fff;border:1px solid var(--border-strong);border-radius:8px;font:inherit;font-size:12px;font-weight:750}
+.posting-date-quick{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.posting-date-quick .text-button{min-height:32px;padding:0 8px;background:#fff;border:1px solid var(--border);border-radius:8px}
+@media(max-width:580px){.posting-date-card{align-items:stretch;flex-direction:column}.posting-date-controls{min-width:0;width:100%}}

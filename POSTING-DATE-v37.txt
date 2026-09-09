@@ -1,0 +1,19 @@
+WORDIVEE v37 — TANGGAL POSTING
+
+Perubahan:
+- Tambah pilihan Tanggal Posting pada Bagian 01.
+- Default pertama kali: BESOK. Nilai terakhir disimpan di browser.
+- Tombol cepat Hari ini / Besok.
+- Nama MP4 menjadi wordivee-videoXX-YYYY-MM-DD.mp4 berdasarkan tanggal posting yang dipilih.
+- Public ID Cloudinary juga diawali wordivee-videoXX-YYYY-MM-DD_... agar workflow v2 dapat mencocokkan tanggal.
+- Motion fix v36 tetap dipertahankan.
+- Audio default tetap video 85% + song 100%.
+
+CONTOH
+Pada 9 September Anda menyiapkan konten untuk 10 September:
+Tanggal Posting = 2026-09-10
+Video01 -> wordivee-video01-2026-09-10.mp4
+...
+Video24 -> wordivee-video24-2026-09-10.mp4
+
+Workflow scheduler v2 kemudian hanya mengambil export yang tanggalnya sama dengan target hari posting.
