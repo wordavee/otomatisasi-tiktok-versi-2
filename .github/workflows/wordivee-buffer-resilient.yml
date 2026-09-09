@@ -1,6 +1,12 @@
 name: Wordivee Buffer Resilient
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/wordivee-buffer-resilient.yml"
+      - "scripts/wordivee_resilient.py"
+      - "scripts/test_wordivee_resilient.py"
   workflow_dispatch:
     inputs:
       session:
@@ -53,7 +59,7 @@ concurrency:
 
 jobs:
   resilient-scheduler:
-    if: ${{ github.event_name == 'workflow_dispatch' || vars.WORDIVEE_AUTOMATION_ENABLED == 'true' }}
+    if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || vars.WORDIVEE_AUTOMATION_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -91,7 +97,7 @@ jobs:
         env:
           INPUT_DRY_RUN_VALUE: ${{ inputs.dry_run }}
         run: |
-          if [[ "${EVENT_NAME}" == "workflow_dispatch" && "${INPUT_DRY_RUN_VALUE}" == "true" ]]; then
+          if [[ "${EVENT_NAME}" == "push" || ("${EVENT_NAME}" == "workflow_dispatch" && "${INPUT_DRY_RUN_VALUE}" == "true") ]]; then
             echo "dry_arg=--dry-run" >> "$GITHUB_OUTPUT"
             echo "live=false" >> "$GITHUB_OUTPUT"
           else
