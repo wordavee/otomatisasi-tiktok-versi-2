@@ -1,0 +1,62 @@
+name: Wordivee One-Time Resilience Validation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/wordivee-one-time-validation.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wordivee-one-time-validation
+  cancel-in-progress: false
+
+jobs:
+  dry-run-matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        session: ["1", "2", "3"]
+    env:
+      BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+      BUFFER_CHANNEL_ID: ${{ secrets.BUFFER_CHANNEL_ID }}
+      CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+      CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+      CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+      EVENT_NAME: workflow_dispatch
+      SCHEDULE_EXPR: ""
+      INPUT_SESSION: ${{ matrix.session }}
+      INPUT_TARGET_DATE: "2026-09-11"
+      INPUT_SLOTS: ""
+      INPUT_MODE: recovery
+      EXPORT_ASSET_FOLDER: wordavee/exports
+      MAX_EXPORT_AGE_HOURS: "30"
+      QUOTE_GUARD_START_DATE: "2026-09-11"
+      QUOTE_SIMILARITY_THRESHOLD: "0.94"
+      QUOTE_HISTORY_FILE: quotes-history.json
+      WORDIVEE_RETRY_DELAYS: "20,60,120"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Offline fault, idempotency, and recovery tests
+        run: python3 scripts/test_wordivee_resilient.py
+
+      - name: Plan session with Quote Guard
+        run: >-
+          python3 scripts/wordivee_resilient.py
+          --phase plan
+          --session "${{ matrix.session }}"
+          --target-date "2026-09-11"
+          --mode recovery
+          --dry-run
+
+      - name: Execute dry run only
+        run: >-
+          python3 scripts/wordivee_resilient.py
+          --phase execute
+          --dry-run
