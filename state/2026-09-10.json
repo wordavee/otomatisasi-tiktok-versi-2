@@ -4,8 +4,8 @@
   "timezone": "Asia/Jakarta",
   "slots": {
     "01": {
-      "status": "planned",
-      "attempts": 0,
+      "status": "scheduled",
+      "attempts": 1,
       "idempotency_key": "30d60769b3ae9f5456e250580834f30dc194d30fdd2a8678ffbe2d73a0e62254",
       "scheduled_for": "2026-09-09T18:00:00.000Z",
       "video_public_id": "wordivee-video01-2026-09-10_083425",
@@ -13,11 +13,15 @@
       "video_url": "https://res.cloudinary.com/j9veqbrw/video/upload/v1788917669/wordivee-video01-2026-09-10_083425.mp4",
       "quote": {},
       "last_error": null,
-      "updated_at": "2026-09-09T04:23:36.147Z"
+      "updated_at": "2026-09-09T04:23:40.665Z",
+      "slot": 1,
+      "target_date": "2026-09-10",
+      "buffer_post_id": "6aa0df4c7b66b49ec6f5dfd8",
+      "reconciled": false
     },
     "02": {
-      "status": "planned",
-      "attempts": 0,
+      "status": "scheduled",
+      "attempts": 1,
       "idempotency_key": "e5e86a141df2226f1895ed7275d691ebfe856b7a96d135d78939aa0acbd5b805",
       "scheduled_for": "2026-09-09T19:00:00.000Z",
       "video_public_id": "wordivee-video02-2026-09-10_084000",
@@ -25,11 +29,15 @@
       "video_url": "https://res.cloudinary.com/j9veqbrw/video/upload/v1788918004/wordivee-video02-2026-09-10_084000.mp4",
       "quote": {},
       "last_error": null,
-      "updated_at": "2026-09-09T04:23:36.147Z"
+      "updated_at": "2026-09-09T04:23:41.558Z",
+      "slot": 2,
+      "target_date": "2026-09-10",
+      "buffer_post_id": "6aa0df4d3bd0dd9ef3245de9",
+      "reconciled": false
     },
     "03": {
-      "status": "planned",
-      "attempts": 0,
+      "status": "scheduled",
+      "attempts": 1,
       "idempotency_key": "0d44fcac92c150bcda216c3345f27660a50d6f395a4b134dba654778aef8fd63",
       "scheduled_for": "2026-09-09T20:00:00.000Z",
       "video_public_id": "wordivee-video03-2026-09-10_084026",
@@ -37,11 +45,15 @@
       "video_url": "https://res.cloudinary.com/j9veqbrw/video/upload/v1788918027/wordivee-video03-2026-09-10_084026.mp4",
       "quote": {},
       "last_error": null,
-      "updated_at": "2026-09-09T04:23:36.147Z"
+      "updated_at": "2026-09-09T04:23:42.545Z",
+      "slot": 3,
+      "target_date": "2026-09-10",
+      "buffer_post_id": "6aa0df4ea821ff5ff70e8862",
+      "reconciled": false
     },
     "04": {
-      "status": "planned",
-      "attempts": 0,
+      "status": "scheduled",
+      "attempts": 1,
       "idempotency_key": "c6c5f8e3cf82e9e3d4bb248c83ec726a856bb7a0ac1ffd95ed8033c4388c4f7b",
       "scheduled_for": "2026-09-09T21:00:00.000Z",
       "video_public_id": "wordivee-video04-2026-09-10_084051",
@@ -49,11 +61,15 @@
       "video_url": "https://res.cloudinary.com/j9veqbrw/video/upload/v1788918053/wordivee-video04-2026-09-10_084051.mp4",
       "quote": {},
       "last_error": null,
-      "updated_at": "2026-09-09T04:23:36.147Z"
+      "updated_at": "2026-09-09T04:23:43.340Z",
+      "slot": 4,
+      "target_date": "2026-09-10",
+      "buffer_post_id": "6aa0df4f3c5ae934d5234290",
+      "reconciled": false
     },
     "05": {
-      "status": "planned",
-      "attempts": 0,
+      "status": "scheduled",
+      "attempts": 1,
       "idempotency_key": "45cc45ac888f215ade75910261a56ba749820c767912f6207fcf9cb26055f39e",
       "scheduled_for": "2026-09-09T22:00:00.000Z",
       "video_public_id": "wordivee-video05-2026-09-10_084127",
@@ -61,11 +77,15 @@
       "video_url": "https://res.cloudinary.com/j9veqbrw/video/upload/v1788918088/wordivee-video05-2026-09-10_084127.mp4",
       "quote": {},
       "last_error": null,
-      "updated_at": "2026-09-09T04:23:36.147Z"
+      "updated_at": "2026-09-09T04:23:44.541Z",
+      "slot": 5,
+      "target_date": "2026-09-10",
+      "buffer_post_id": "6aa0df50493bbf8c282a14ba",
+      "reconciled": false
     },
     "06": {
-      "status": "planned",
-      "attempts": 0,
+      "status": "scheduled",
+      "attempts": 1,
       "idempotency_key": "e68208ef3e85dc785e98edc891b149b8b524634a75b35bed9655fee03866c7fc",
       "scheduled_for": "2026-09-09T23:00:00.000Z",
       "video_public_id": "wordivee-video06-2026-09-10_084148",
@@ -73,11 +93,15 @@
       "video_url": "https://res.cloudinary.com/j9veqbrw/video/upload/v1788918109/wordivee-video06-2026-09-10_084148.mp4",
       "quote": {},
       "last_error": null,
-      "updated_at": "2026-09-09T04:23:36.147Z"
+      "updated_at": "2026-09-09T04:23:45.416Z",
+      "slot": 6,
+      "target_date": "2026-09-10",
+      "buffer_post_id": "6aa0df513bd0dd9ef3245e13",
+      "reconciled": false
     },
     "07": {
-      "status": "planned",
-      "attempts": 0,
+      "status": "scheduled",
+      "attempts": 1,
       "idempotency_key": "818bd988dfbc93aff2d9c0f7eba2eab44daad7cb5ce93954656ddd889594bf51",
       "scheduled_for": "2026-09-10T00:00:00.000Z",
       "video_public_id": "wordivee-video07-2026-09-10_084205",
@@ -85,11 +109,15 @@
       "video_url": "https://res.cloudinary.com/j9veqbrw/video/upload/v1788918126/wordivee-video07-2026-09-10_084205.mp4",
       "quote": {},
       "last_error": null,
-      "updated_at": "2026-09-09T04:23:36.147Z"
+      "updated_at": "2026-09-09T04:23:46.379Z",
+      "slot": 7,
+      "target_date": "2026-09-10",
+      "buffer_post_id": "6aa0df52493bbf8c282a1505",
+      "reconciled": false
     },
     "08": {
-      "status": "planned",
-      "attempts": 0,
+      "status": "scheduled",
+      "attempts": 1,
       "idempotency_key": "71c0f21c95d9a2a758441a4f26e596a0a5321d289da2d5336ab009defb48792a",
       "scheduled_for": "2026-09-10T01:00:00.000Z",
       "video_public_id": "wordivee-video08-2026-09-10_084227",
@@ -97,11 +125,15 @@
       "video_url": "https://res.cloudinary.com/j9veqbrw/video/upload/v1788918148/wordivee-video08-2026-09-10_084227.mp4",
       "quote": {},
       "last_error": null,
-      "updated_at": "2026-09-09T04:23:36.147Z"
+      "updated_at": "2026-09-09T04:23:47.228Z",
+      "slot": 8,
+      "target_date": "2026-09-10",
+      "buffer_post_id": "6aa0df53a821ff5ff70e888c",
+      "reconciled": false
     },
     "09": {
-      "status": "planned",
-      "attempts": 0,
+      "status": "scheduled",
+      "attempts": 1,
       "idempotency_key": "7422b366ed435d20bd896df028e756402d8d8349cf643e22383b10966282a562",
       "scheduled_for": "2026-09-10T02:00:00.000Z",
       "video_public_id": "wordivee-video09-2026-09-10_084245",
@@ -109,11 +141,15 @@
       "video_url": "https://res.cloudinary.com/j9veqbrw/video/upload/v1788918166/wordivee-video09-2026-09-10_084245.mp4",
       "quote": {},
       "last_error": null,
-      "updated_at": "2026-09-09T04:23:36.147Z"
+      "updated_at": "2026-09-09T04:23:48.196Z",
+      "slot": 9,
+      "target_date": "2026-09-10",
+      "buffer_post_id": "6aa0df543c5ae934d52342e1",
+      "reconciled": false
     },
     "10": {
-      "status": "planned",
-      "attempts": 0,
+      "status": "scheduled",
+      "attempts": 1,
       "idempotency_key": "ed46409b0936f58ee49ec19deeacf5963ae599f12cb1043b55f2f3cafffcb0f0",
       "scheduled_for": "2026-09-10T03:00:00.000Z",
       "video_public_id": "wordivee-video10-2026-09-10_084307",
@@ -121,8 +157,12 @@
       "video_url": "https://res.cloudinary.com/j9veqbrw/video/upload/v1788918188/wordivee-video10-2026-09-10_084307.mp4",
       "quote": {},
       "last_error": null,
-      "updated_at": "2026-09-09T04:23:36.147Z"
+      "updated_at": "2026-09-09T04:23:49.239Z",
+      "slot": 10,
+      "target_date": "2026-09-10",
+      "buffer_post_id": "6aa0df557b66b49ec6f5e04f",
+      "reconciled": false
     }
   },
-  "updated_at": "2026-09-09T04:23:36.147Z"
+  "updated_at": "2026-09-09T04:23:49.239Z"
 }
