@@ -32,7 +32,7 @@ on:
       timezone: "Asia/Jakarta"
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: wordivee-buffer-publisher
@@ -56,9 +56,18 @@ jobs:
       EXPORT_ASSET_FOLDER: wordavee/exports
       MAX_EXPORT_AGE_HOURS: "30"
       EXPORT_RETENTION_DAYS: "3"
+      QUOTE_GUARD_START_DATE: "2026-09-11"
+      QUOTE_SIMILARITY_THRESHOLD: "0.94"
+      QUOTE_HISTORY_FILE: "quotes-history.json"
 
     steps:
-      - name: Preflight, schedule Buffer, and cleanup Cloudinary
+      - name: Checkout repository for quote history
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Preflight, quote guard, schedule Buffer, and cleanup Cloudinary
         shell: bash
         run: |
           python3 - <<'PY'
@@ -66,6 +75,8 @@ jobs:
           import re
           import json
           import base64
+          import hashlib
+          import unicodedata
           import urllib.parse
           import urllib.request
           import urllib.error
@@ -83,6 +94,9 @@ jobs:
           asset_folder = os.environ.get("EXPORT_ASSET_FOLDER", "wordavee/exports")
           max_age_hours = float(os.environ.get("MAX_EXPORT_AGE_HOURS", "30"))
           retention_days = float(os.environ.get("EXPORT_RETENTION_DAYS", "3"))
+          guard_start = date.fromisoformat(os.environ.get("QUOTE_GUARD_START_DATE", "2026-09-11"))
+          similarity_threshold = float(os.environ.get("QUOTE_SIMILARITY_THRESHOLD", "0.94"))
+          history_file = os.environ.get("QUOTE_HISTORY_FILE", "quotes-history.json")
 
           event_name = os.environ.get("EVENT_NAME", "")
           schedule_expr = os.environ.get("SCHEDULE_EXPR", "")
@@ -105,6 +119,57 @@ jobs:
               if dt.tzinfo is None:
                   dt = dt.replace(tzinfo=UTC)
               return dt.astimezone(UTC)
+
+          def normalize_quote(value):
+              value = unicodedata.normalize("NFKD", str(value or ""))
+              value = "".join(ch for ch in value if not unicodedata.combining(ch)).lower()
+              value = re.sub(r"[^\w\s]", " ", value, flags=re.UNICODE)
+              value = re.sub(r"_", " ", value)
+              return re.sub(r"\s+", " ", value).strip()
+
+          def dice_similarity(a, b):
+              a = normalize_quote(a).replace(" ", "")
+              b = normalize_quote(b).replace(" ", "")
+              if not a or not b:
+                  return 0.0
+              if a == b:
+                  return 1.0
+              if len(a) < 2 or len(b) < 2:
+                  return 0.0
+              counts = {}
+              for i in range(len(a) - 1):
+                  bg = a[i:i+2]
+                  counts[bg] = counts.get(bg, 0) + 1
+              overlap = 0
+              for i in range(len(b) - 1):
+                  bg = b[i:i+2]
+                  n = counts.get(bg, 0)
+                  if n > 0:
+                      overlap += 1
+                      counts[bg] = n - 1
+              return 2.0 * overlap / ((len(a) - 1) + (len(b) - 1))
+
+          def quote_hash(normalized):
+              return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+
+          def decode_context_value(value):
+              return urllib.parse.unquote(str(value or ""))
+
+          def load_history():
+              try:
+                  with open(history_file, "r", encoding="utf-8") as f:
+                      data = json.load(f)
+                  if not isinstance(data, dict):
+                      raise ValueError("history bukan object")
+                  if not isinstance(data.get("quotes"), list):
+                      data["quotes"] = []
+                  data.setdefault("version", 1)
+                  data.setdefault("updated_at", None)
+                  return data
+              except FileNotFoundError:
+                  return {"version": 1, "updated_at": None, "quotes": []}
+              except Exception as exc:
+                  fail(f"quotes-history.json tidak valid: {exc}")
 
           def basic_auth():
               token = base64.b64encode(f"{cloud_key}:{cloud_secret}".encode()).decode()
@@ -181,6 +246,8 @@ jobs:
           else:
               target_day = now_wib.date()
 
+          quote_guard_active = target_day >= guard_start
+
           def slot_due_wib(slot):
               if slot == 24:
                   next_day = target_day + timedelta(days=1)
@@ -196,6 +263,7 @@ jobs:
           print(f"Session            : {session}")
           print(f"Target tanggal WIB : {target_day}")
           print(f"Dry run            : {dry_run}")
+          print(f"Quote guard        : {'AKTIF' if quote_guard_active else 'LEGACY (mulai ' + guard_start.isoformat() + ')'}")
           print(f"Slots              : {slots}")
 
           # Fetch all assets directly in the exports asset folder (pagination supported).
@@ -301,6 +369,105 @@ jobs:
                   print(" -", err)
               fail("Lengkapi export terbaru untuk semua slot sesi ini.")
 
+          # v38+: retrieve contextual metadata for the chosen Cloudinary assets.
+          # Cloudinary returns context under context.custom.*.
+          if quote_guard_active:
+              asset_ids = [chosen[slot].get("asset_id") for slot in slots]
+              if any(not x for x in asset_ids):
+                  fail("Ada export tanpa asset_id; quote guard tidak dapat diverifikasi.")
+              query_pairs = [("asset_ids[]", aid) for aid in asset_ids]
+              query_pairs.append(("context", "true"))
+              details_url = (
+                  f"https://api.cloudinary.com/v1_1/{cloud_name}/resources/by_asset_ids?"
+                  + urllib.parse.urlencode(query_pairs)
+              )
+              detail_data = http_json(details_url, headers=basic_auth())
+              detail_by_id = {x.get("asset_id"): x for x in (detail_data.get("resources") or [])}
+          else:
+              detail_by_id = {}
+
+          history = load_history()
+          historical = history.get("quotes") or []
+          historical_hashes = {str(x.get("hash") or "") for x in historical if x.get("hash")}
+          quote_meta = {}
+          quote_errors = []
+          batch_hashes = set()
+          batch_norms = []
+
+          if quote_guard_active:
+              for slot in slots:
+                  asset = chosen[slot]
+                  details = detail_by_id.get(asset.get("asset_id")) or {}
+                  custom = ((details.get("context") or {}).get("custom") or {})
+                  quote_text = decode_context_value(custom.get("quote"))
+                  normalized = decode_context_value(custom.get("quote_normalized")) or normalize_quote(quote_text)
+                  supplied_hash = str(custom.get("quote_hash") or "").strip().lower()
+                  qhash = supplied_hash or (quote_hash(normalized) if normalized else "")
+                  ctx_date = str(custom.get("posting_date") or "")
+                  ctx_slot = str(custom.get("video_slot") or "").zfill(2)
+
+                  if not quote_text or not normalized or not qhash:
+                      quote_errors.append(
+                          f"Video{slot:02d}: metadata quote tidak ada. Export ulang memakai generator v38+."
+                      )
+                      continue
+                  if ctx_date and ctx_date != target_day_str:
+                      quote_errors.append(f"Video{slot:02d}: context posting_date={ctx_date}, seharusnya {target_day_str}")
+                      continue
+                  if ctx_slot and ctx_slot != f"{slot:02d}":
+                      quote_errors.append(f"Video{slot:02d}: context video_slot={ctx_slot} tidak cocok")
+                      continue
+                  if qhash in historical_hashes:
+                      old = next((x for x in historical if x.get("hash") == qhash), {})
+                      quote_errors.append(
+                          f"Video{slot:02d}: quote SUDAH PERNAH DIPAKAI pada {old.get('date','tanggal lama')}"
+                      )
+                      continue
+                  if qhash in batch_hashes:
+                      quote_errors.append(f"Video{slot:02d}: quote duplikat di sesi yang sama")
+                      continue
+
+                  # Similarity against central history and this batch.
+                  nearest_score = 0.0
+                  nearest = None
+                  for old in historical:
+                      old_norm = old.get("normalized") or normalize_quote(old.get("text"))
+                      if not old_norm:
+                          continue
+                      ratio = min(len(normalized), len(old_norm)) / max(len(normalized), len(old_norm))
+                      if len(normalized) >= 18 and len(old_norm) >= 18 and ratio >= 0.72:
+                          score = dice_similarity(normalized, old_norm)
+                          if score > nearest_score:
+                              nearest_score, nearest = score, old
+                  for old_slot, old_norm in batch_norms:
+                      ratio = min(len(normalized), len(old_norm)) / max(len(normalized), len(old_norm))
+                      if len(normalized) >= 18 and len(old_norm) >= 18 and ratio >= 0.72:
+                          score = dice_similarity(normalized, old_norm)
+                          if score > nearest_score:
+                              nearest_score, nearest = score, {"date": target_day_str, "slot": old_slot}
+                  if nearest_score >= similarity_threshold:
+                      quote_errors.append(
+                          f"Video{slot:02d}: quote terlalu mirip ({nearest_score*100:.0f}%) dengan quote {nearest.get('date','lama')} slot {nearest.get('slot','?')}"
+                      )
+                      continue
+
+                  batch_hashes.add(qhash)
+                  batch_norms.append((slot, normalized))
+                  quote_meta[slot] = {
+                      "text": quote_text,
+                      "normalized": normalized,
+                      "hash": qhash,
+                  }
+                  print(f"QUOTE OK Video{slot:02d}: hash={qhash[:12]}…")
+
+              if quote_errors:
+                  print("\nQUOTE GUARD GAGAL — tidak ada post Buffer yang dibuat:")
+                  for err in quote_errors:
+                      print(" -", err)
+                  fail("Perbaiki quote/export sebelum menjadwalkan sesi ini.")
+          else:
+              print(f"Quote guard legacy : dilewati untuk {target_day_str}; jaminan unik mulai {guard_start.isoformat()}.")
+
           # Locate the Buffer organization that owns this channel.
           account_data = buffer_graphql('''
           query GetOrganizations {
@@ -371,7 +538,9 @@ jobs:
               )
 
           if dry_run:
-              print("\nDRY RUN BERHASIL — tidak ada post Buffer dibuat dan tidak ada Cloudinary yang dihapus.")
+              if quote_guard_active:
+                  print(f"QUOTE GUARD OK — {len(quote_meta)} quote unik lolos.")
+              print("\nDRY RUN BERHASIL — tidak ada post Buffer dibuat, history tidak diubah, dan tidak ada Cloudinary yang dihapus.")
               raise SystemExit(0)
 
           # Create scheduled TikTok posts. Caption intentionally empty; the quote/song are in MP4.
@@ -428,14 +597,51 @@ jobs:
 
           print(f"\nSESI {session} BERHASIL: {len(created_posts)} post dijadwalkan ke TikTok wordavee.")
 
+          if quote_guard_active:
+              # Record only posts that Buffer actually accepted.
+              for (slot, asset, due_wib, due_utc), post_id in zip(plan, created_posts):
+                  meta = quote_meta[slot]
+                  history["quotes"].append({
+                      "text": meta["text"],
+                      "normalized": meta["normalized"],
+                      "hash": meta["hash"],
+                      "date": target_day_str,
+                      "slot": slot,
+                      "buffer_post_id": post_id,
+                      "cloudinary_public_id": asset.get("public_id"),
+                      "saved_at": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+                  })
+              history["updated_at"] = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+              with open(history_file, "w", encoding="utf-8") as f:
+                  json.dump(history, f, ensure_ascii=False, indent=2)
+                  f.write("\n")
+              print(f"Quote history      : +{len(created_posts)} quote -> {history_file}")
+
           # Add a compact Actions job summary.
           summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
           if summary_path:
               with open(summary_path, "a", encoding="utf-8") as f:
                   f.write(f"## Wordivee session {session} berhasil\n\n")
                   f.write(f"Target tanggal WIB: **{target_day}**  \n")
-                  f.write(f"Jumlah post: **{len(created_posts)}**  \n\n")
+                  f.write(f"Jumlah post: **{len(created_posts)}**  \n")
+                  f.write(f"Quote guard: **{'aktif' if quote_guard_active else 'legacy'}**  \n\n")
                   f.write("| Video | Jadwal WIB | Buffer post ID |\n|---|---|---|\n")
                   for (slot, _, due_wib, _), post_id in zip(plan, created_posts):
                       f.write(f"| Video{slot:02d} | {due_wib.strftime('%Y-%m-%d %H:%M')} | `{post_id}` |\n")
           PY
+
+
+      - name: Commit updated quote history
+        if: ${{ success() }}
+        shell: bash
+        run: |
+          if git diff --quiet -- quotes-history.json; then
+            echo "Tidak ada perubahan quote history untuk run ini."
+            exit 0
+          fi
+          git config user.name "wordivee-automation"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add quotes-history.json
+          git commit -m "Update Wordivee quote history"
+          git pull --rebase origin main
+          git push origin HEAD:main
