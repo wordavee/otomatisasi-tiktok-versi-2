@@ -30,7 +30,7 @@ jobs:
       EVENT_NAME: workflow_dispatch
       SCHEDULE_EXPR: ""
       INPUT_SESSION: ${{ matrix.session }}
-      INPUT_TARGET_DATE: "2026-09-11"
+      INPUT_TARGET_DATE: "2026-09-10"
       INPUT_SLOTS: ""
       INPUT_MODE: recovery
       EXPORT_ASSET_FOLDER: wordavee/exports
@@ -51,7 +51,7 @@ jobs:
           python3 scripts/wordivee_resilient.py
           --phase plan
           --session "${{ matrix.session }}"
-          --target-date "2026-09-11"
+          --target-date "2026-09-10"
           --mode recovery
           --dry-run
 
