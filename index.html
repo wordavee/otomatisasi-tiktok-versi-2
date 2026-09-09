@@ -9,11 +9,11 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="icons/app-icon-180.png" />
   <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="cloudinary.css?v=37" />
-  <script src="assets/default-caption-font-inline.js?v=37" defer></script>
-  <script src="pwa.js?v=37" defer></script>
+  <link rel="stylesheet" href="cloudinary.css?v=38" />
+  <script src="assets/default-caption-font-inline.js?v=38" defer></script>
+  <script src="pwa.js?v=38" defer></script>
   <script src="vendor/mediabunny.min.js" defer></script>
-  <script src="cloudinary.js?v=37" defer></script>
+  <script src="cloudinary.js?v=38" defer></script>
 </head>
 <body class="tipe5-page">
   <a class="skip-link" href="#workspace">Lewati ke workspace</a>
@@ -30,7 +30,7 @@
       <div>
         <p class="kicker">24 VIDEO · 24 JAM · 1 SONG · FULL 9:16</p>
         <h2>Pilih tanggal posting, video, tulis quotes, lalu export.</h2>
-        <p>Pilih tanggal posting terlebih dahulu. Video 01 = 01:00 sampai Video 24 = 00:00. Hasil export otomatis di-upload ke Cloudinary dengan tanggal tersebut.</p>
+        <p>Pilih tanggal posting, tulis quote unik, lalu export. Quote yang sama atau terlalu mirip dengan riwayat akan diblokir sebelum upload.</p>
       </div>
       <ol class="stepper"><li class="active"><span>1</span>Video</li><li><span>2</span>Audio</li><li><span>3</span>Tulisan</li><li><span>4</span>MP4</li></ol>
     </section>
@@ -93,6 +93,14 @@
           </div>
           <label class="t5-label" for="captionText">TULISAN VIDEO</label>
           <textarea id="captionText" class="caption-box" rows="5" maxlength="260">Setelah bertengkar, dia menghilang. Kamu lagi yang merasa bersalah.</textarea>
+          <div id="quoteGuard" class="quote-guard loading" role="status" aria-live="polite">
+            <div class="quote-guard-head">
+              <span class="quote-guard-dot"></span>
+              <strong id="quoteGuardTitle">Memuat riwayat quote…</strong>
+              <span id="quoteGuardCount" class="quote-guard-count">0 tersimpan</span>
+            </div>
+            <p id="quoteGuardMessage">Export akan dibuka setelah riwayat berhasil diperiksa.</p>
+          </div>
           <div class="t5-asset-grid">
             <div class="t5-asset-card">
               <div class="t5-asset-copy"><span>FONT TULISAN</span><strong id="fontLabel">955f01d6-393f-449a-8962-a30b9ebc9cac</strong><small>TTF, OTF, WOFF, atau WOFF2</small></div>

@@ -1,0 +1,9 @@
+WORDIVEE v38 — QUOTE HISTORY + ANTI-DUPLIKAT
+
+1. Generator membaca quotes-history.json dari GitHub Pages.
+2. Quote yang sama setelah normalisasi huruf/tanda baca diblokir.
+3. Quote yang sangat mirip juga diblokir.
+4. Export menyimpan quote_hash, quote_normalized, quote, tanggal dan slot sebagai Cloudinary context.
+5. Workflow v3 memverifikasi context sebelum menjadwalkan Buffer dan memperbarui quotes-history.json setelah post berhasil dibuat.
+6. Riwayat pusat hanya mulai lengkap untuk export yang dibuat dengan v38 atau lebih baru.
+7. Local pending history membantu mencegah duplikat antar-slot sebelum sesi dijalankan.

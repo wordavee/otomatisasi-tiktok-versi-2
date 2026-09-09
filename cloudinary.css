@@ -83,3 +83,8 @@
 .posting-date-quick{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .posting-date-quick .text-button{min-height:32px;padding:0 8px;background:#fff;border:1px solid var(--border);border-radius:8px}
 @media(max-width:580px){.posting-date-card{align-items:stretch;flex-direction:column}.posting-date-controls{min-width:0;width:100%}}
+
+
+/* v38 — quote history + anti-duplicate */
+.quote-guard{display:grid;gap:5px;margin:10px 0 0;padding:10px 12px;background:#f7f8fa;border:1px solid var(--border);border-radius:10px}
+.quote-guard-head{display:flex;align-items:center;gap:8px;min-width:0}.quote-guard-dot{width:8px;height:8px;flex:0 0 auto;border-radius:50%;background:#aeb1b4}.quote-guard strong{font-size:11px;color:var(--ink)}.quote-guard-count{margin-left:auto;color:var(--muted);font-size:9px;font-weight:800}.quote-guard p{margin:0;color:var(--muted);font-size:9px;line-height:1.45}.quote-guard.loading{background:#fff9e7;border-color:#efe0aa}.quote-guard.loading .quote-guard-dot{background:#d2a225}.quote-guard.ok{background:#eaf7ef;border-color:#cce8d8}.quote-guard.ok .quote-guard-dot{background:#36a26f}.quote-guard.warn{background:#fff9e7;border-color:#efe0aa}.quote-guard.warn .quote-guard-dot{background:#d2a225}.quote-guard.blocked{background:#fff2f0;border-color:#edcbc6}.quote-guard.blocked .quote-guard-dot{background:#bf4d43}.quote-guard.blocked strong{color:#993e36}
