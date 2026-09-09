@@ -1,0 +1,14 @@
+WORDIVEE MOTION FIX v36
+=======================
+
+Perbaikan untuk export yang audio dan quotes normal tetapi gambar membeku.
+
+Perubahan utama:
+1. Sumber Cloudinary dinormalisasi ke H.264/AAC + 24 fps (fps_24).
+2. Export tidak lagi memakai samplesAtTimestamps untuk pembacaan frame berurutan.
+3. Frame sumber dibaca sequential dengan VideoSampleSink.samples(), sesuai rekomendasi Mediabunny untuk sequential media access.
+4. Output tetap dinormalisasi 24 fps.
+5. Decoder sumber menggunakan prefer-software untuk mengurangi perbedaan decoder/GPU antar video.
+6. Durasi video dihitung dari end timestamp - first timestamp agar track dengan offset timestamp tetap benar.
+
+Setelah upload v36 ke GitHub Pages, re-export khusus Video21, Video22, dan Video24 lalu periksa gerakan sebelum menjadwalkan ulang.
